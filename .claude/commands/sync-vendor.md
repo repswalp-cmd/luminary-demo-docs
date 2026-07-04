@@ -12,7 +12,7 @@ regenerates seed data, updates all docs, pushes to GitHub, and deploys to App Ru
 
 | Vendor | Repo directory | Generator script | ECR repo name | Has GitHub Actions CI/CD |
 |---|---|---|---|---|
-| ServiceNow | mock-servicenow_v2_api | generate_sn_v2_data.py | mock-servicenow-v2-api | Yes |
+| ServiceNow | mock-servicenow_v2_api | generate_sn_v2_data.py | mock-servicenow-v2-api | No (CI broken — AWS secrets not set in repo) |
 | CrowdStrike | mock-crowdstrike-api | generate_cs_data.py | mock-crowdstrike-api | No |
 | Intune | mock-intune-api | generate_intune_data.py | mock-intune-api | No |
 | JAMF | mock-jamfpro-api | generate_jamf_data.py | mock-jamfpro-api | No |
@@ -91,16 +91,13 @@ git add seed_data/ README.md
 Commit with a clear message describing what changed (mention master sheet sync and date).
 Push to `origin main`.
 
-For **ServiceNow**: the GitHub Actions `deploy.yml` workflow triggers automatically on push.
-It builds the Docker image and pushes to ECR. App Runner picks it up via AutoDeploymentsEnabled.
-Tell the user the push has triggered CI/CD and they can monitor at:
-`https://github.com/repswalp-cmd/{repo}/actions`
+**Note — ServiceNow CI is broken**: the `deploy.yml` workflow exists but fails on every run
+because `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` secrets are not set in the repo.
+Treat ServiceNow the same as other vendors — build and push manually (Step 7).
 
 ### Step 7 — Deploy to ECR + App Runner (vendors WITHOUT GitHub Actions CI/CD)
 
-Skip this step for ServiceNow (handled by GitHub Actions in Step 6).
-
-For CrowdStrike, Intune, JAMF, Ordr, Mist, Meraki, and Aruba EdgeConnect — do this manually:
+For all vendors including ServiceNow — do this manually (ServiceNow CI/CD is broken):
 
 **7a. Authenticate with ECR:**
 ```bash
