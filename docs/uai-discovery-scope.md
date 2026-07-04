@@ -50,11 +50,10 @@ Last updated: 2026-07-04
    `08_ip_routers.json` with `sys_class_name = cmdb_ci_ip_router`, Aruba manufacturer, and
    ArubaOS 10 firmware. Total SN assets increased from 1,138 → 1,156.
 
-2. **Network Gear and Load Balancer `sys_class_name` override** — The generator intentionally
-   overrides both `cmdb_ci_netgear` and `cmdb_ci_lb_service` records to
-   `sys_class_name = cmdb_ci_ip_switch`. This was added as a workaround for a UAI
-   classification engine limitation ("no taxonomy leaf"). Effect: UAI sees these records
-   as additional IP Switches instead of Network Gear / Load Balancers.
+2. ~~**Network Gear and Load Balancer `sys_class_name` override**~~ — **Fixed 2026-07-04.**
+   The `cmdb_ci_ip_switch` override block has been removed. Both `cmdb_ci_netgear` (Network Gear)
+   and `cmdb_ci_lb_service` (Load Balancer Services) now carry their correct `sys_class_name`
+   and appear as distinct asset types in UAI. IP Switch count corrected from 24 → 12.
 
 ---
 
