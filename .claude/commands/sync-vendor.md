@@ -84,9 +84,13 @@ Do not rewrite the entire README — only update the numbers and source referenc
 
 ### Step 6 — Git commit and push to GitHub
 
+**CRITICAL: The Docker image (Step 7) is built from disk, not from git — but App Runner serves
+whatever was baked into the image at build time. Always commit and push BEFORE building the image,
+so the deployed service matches the git history.**
+
 Stage all changed files in the vendor repo:
 ```
-git add seed_data/ README.md
+git add seed_data/raw/ seed_data/generate_*.py README.md
 ```
 Commit with a clear message describing what changed (mention master sheet sync and date).
 Push to `origin main`.
