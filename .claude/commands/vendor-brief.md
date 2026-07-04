@@ -40,15 +40,15 @@ Working dir for git commands: `/Users/rrepswal/Library/CloudStorage/OneDrive-Inf
 | Vendor argument | Integration # in Playbook | Mock API URL |
 |---|---|---|
 | Microsoft Intune | 1 | https://bwauy2kxvq.us-east-1.awsapprunner.com |
-| CrowdStrike Falcon | 2 | https://jzrsfhbdkh.us-east-1.awsapprunner.com |
-| Juniper Mist | 3 | (API Gateway — check store.py) |
-| Cisco Meraki | 4 | https://wqhk5yzmjj.us-east-1.awsapprunner.com |
-| Jamf Pro | 5 | https://f6trqebhej.us-east-1.awsapprunner.com |
-| Tenable | 6 | https://i2zqkmpuzq.us-east-1.awsapprunner.com |
-| ServiceNow | 7 | https://pqeuvtqdbd.us-east-1.awsapprunner.com |
+| CrowdStrike Falcon | 2 | https://iviyrvztrr.us-east-1.awsapprunner.com |
+| Juniper Mist | 3 | https://grq3hipzpu.us-east-1.awsapprunner.com |
+| Cisco Meraki | 4 | https://4ndm7ee4pz.us-east-1.awsapprunner.com |
+| Jamf Pro | 5 | https://qceaa5a7pv.us-east-1.awsapprunner.com |
+| Tenable | 6 | https://9rdis2evgu.us-east-1.awsapprunner.com |
+| ServiceNow | 7 | https://6rm6inhcea.us-east-1.awsapprunner.com |
 | Aruba EdgeConnect | 8 | https://bbkvcuavhc.us-east-1.awsapprunner.com |
-| VMware vCenter | 9 | https://hmaeiufrxb.us-east-1.awsapprunner.com |
-| Ordr | 10 | https://byudsewktx.us-east-1.awsapprunner.com |
+| VMware vCenter | 9 | https://j6ntvkhgtb.us-east-1.awsapprunner.com |
+| Ordr | 10 | https://dm6pi7e2mj.us-east-1.awsapprunner.com |
 
 ---
 
