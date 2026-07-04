@@ -45,10 +45,10 @@ Last updated: 2026-07-04
 
 **Known issues:**
 
-1. **`sdwan` category silently dropped** — 18 SD-WAN appliances (Aruba EdgeConnect) are
-   marked `seen_by = servicenow` in the master sheet, but `generate_sn_v2_data.py` has no
-   `CAT_TO_TABLE` entry for `sdwan`. The generator skips these rows silently. They should be
-   mapped to `cmdb_ci_ip_router` (SD-WAN appliances appear as network routers in a CMDB).
+1. ~~**`sdwan` category silently dropped**~~ — **Fixed 2026-07-04.** `sdwan` now maps to
+   `cmdb_ci_ip_router` in `CAT_TO_TABLE`. The 18 Aruba EdgeConnect appliances appear in
+   `08_ip_routers.json` with `sys_class_name = cmdb_ci_ip_router`, Aruba manufacturer, and
+   ArubaOS 10 firmware. Total SN assets increased from 1,138 → 1,156.
 
 2. **Network Gear and Load Balancer `sys_class_name` override** — The generator intentionally
    overrides both `cmdb_ci_netgear` and `cmdb_ci_lb_service` records to
