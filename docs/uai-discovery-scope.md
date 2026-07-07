@@ -4,7 +4,7 @@ Infoblox Universal Asset Insights syncs only the asset types defined in each ven
 **Discovery Scope** configuration. This doc records the scope for each vendor, what our
 mock generates, and any known gaps or issues.
 
-Last updated: 2026-07-04
+Last updated: 2026-07-05
 
 ---
 
@@ -66,12 +66,15 @@ Last updated: 2026-07-04
 | Sites | Devices | ✅ `devices.json` — 64 APs (AP34/AP45) + 27 switches (EX4400-48) |
 | Sites | Wireless Clients | ✅ `wireless_clients.json` — 583 clients (win, mac, ios, android, iot) |
 | Sites | Wired Clients | ✅ `wired_clients.json` — 41 clients (linux_ws, printer, clinic, router) |
-| Sites | Maps | ❌ Not generated — mock has no floor map data |
+| Sites | Maps | ✅ 15 floor maps generated — 5 floors × 3 sites, named "City - Floor" (e.g. "Bangalore - 4th Floor"); served from `/api/v1/sites/{site_id}/maps` |
 | Sites | Port Stats | ❌ Not generated — mock has no per-port statistics |
 | Sites | Networks | ✅ Same as `derived_networks.json` (per-site networks) |
 
-**Status:** Maps and Port Stats are in UAI scope but the mock doesn't serve these
-endpoints. UAI will receive empty results for those — not harmful, just blank in the UI.
+**Status:** Port Stats are in UAI scope but not generated — UAI gets empty results,
+not harmful. Maps are now implemented: 15 floor plans (1st–5th Floor per site),
+named with city prefix so UAI shows "Bangalore - 4th Floor", "Amsterdam - 2nd Floor",
+etc. Devices carry a `map_id` derived from their floor number in the hostname pattern
+`-f{N}-`.
 
 ---
 
