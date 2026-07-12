@@ -20,6 +20,7 @@ regenerates seed data, updates all docs, pushes to GitHub, and deploys to App Ru
 | Mist | mock-mist-api | generate_mist_data.py | mock-mist-api-v2 | No |
 | Meraki | mock-meraki-api | generate_meraki_data.py | mock-meraki-api | No |
 | Aruba EdgeConnect | mock-aruba-ec-api | generate_ec_data.py | mock-aruba-ec-api | No |
+| Tenable | mock-tenable-api | generate_tenable_data.py | mock-tenable-api | No |
 
 **AWS config:** region `us-east-1`, account `905418046272`,
 ECR base: `905418046272.dkr.ecr.us-east-1.amazonaws.com`
@@ -44,6 +45,7 @@ Ask the user which vendor mock API they want to sync using AskUserQuestion with 
 - Mist
 - Meraki
 - Aruba EdgeConnect
+- Tenable
 
 ### Step 2 — Verify master sheet exists
 
@@ -77,14 +79,72 @@ Read the vendor repo's `README.md`. Update:
 - Total record/asset count (match what the generator printed)
 - Per-site breakdown table if present
 - Per-category breakdown table if present
-- Any "last updated" or date references → set to today's date
+- Any "last updated" or date references → set to today's date (2026-07-01)
 - Master sheet source reference → point to `https://github.com/repswalp-cmd/luminary-demo-docs`
 
 Do not rewrite the entire README — only update the numbers and source references.
 
-### Step 6 — Git commit and push to GitHub
+### Step 6 — Update all three luminary-demo-docs reference documents
 
-**CRITICAL: The Docker image (Step 7) is built from disk, not from git — but App Runner serves
+Every master sheet sync changes a vendor's total asset count. Update that count in all
+three docs in `luminary-demo-docs/docs/` **before** committing anything.
+
+**Documents to update (always all three together):**
+1. `luminary-demo-docs/docs/Luminary_Fleet_Environment_Reference.docx`
+2. `luminary-demo-docs/docs/Luminary_Systems_SE_Overview.docx`
+3. `luminary-demo-docs/docs/Luminary_UAI_Dataset_Final.docx`
+
+**Where the vendor count lives in each doc:**
+
+| Document | Table | How to find the vendor row |
+|---|---|---|
+| Fleet Reference | T1 (§2 provider table) | `cells[0].text` matches vendor display name |
+| SE Overview | T1 (§2 provider table) | same |
+| Dataset Final | T0 (provider discovery table) | `cells[0].text` matches vendor display name |
+
+**Vendor display names** (use exact match against `cells[0].text`):
+
+| Vendor key | Display name in docs |
+|---|---|
+| ServiceNow | `ServiceNow` |
+| CrowdStrike | `CrowdStrike (EDR)` |
+| Intune | `Microsoft Intune (MDM)` |
+| JAMF | `Jamf Pro (MDM)` |
+| Ordr | `Ordr (IoT/OT)` |
+| Mist | `Juniper Mist (Network)` |
+| Meraki | `Cisco Meraki (Network)` |
+| Aruba EdgeConnect | `Aruba EdgeConnect (SD-WAN)` |
+| Tenable | `Tenable (Vuln)` |
+
+For Fleet Reference and SE Overview the count is in `cells[1]`; for Dataset Final it is in `cells[2]` (the "Approx." column).
+
+**Use python-docx** to patch only the affected cell. Do NOT do broad string replace — it
+will hit unrelated numbers in other tables (learned from prior over-replacement bug).
+Patch pattern:
+```python
+from docx import Document
+doc = Document(path)
+for row in doc.tables[TABLE_INDEX].rows:
+    if DISPLAY_NAME in row.cells[0].text:
+        para = row.cells[COUNT_COL].paragraphs[0]
+        for run in para.runs: run.text = ''
+        para.runs[0].text = str(new_count)
+        break
+doc.save(path)
+```
+
+After patching all three docs, commit them to the `luminary-demo-docs` repo (separate commit
+from the vendor repo commit in Step 7):
+```bash
+cd {API root}/luminary-demo-docs
+git add docs/
+git commit -m "Update <Vendor> count to <N> (master sheet sync YYYY-MM-DD)"
+git push origin main
+```
+
+### Step 7 — Git commit and push vendor repo to GitHub
+
+**CRITICAL: The Docker image (Step 8) is built from disk, not from git — but App Runner serves
 whatever was baked into the image at build time. Always commit and push BEFORE building the image,
 so the deployed service matches the git history.**
 
@@ -97,38 +157,38 @@ Push to `origin main`.
 
 **Note — ServiceNow CI is broken**: the `deploy.yml` workflow exists but fails on every run
 because `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` secrets are not set in the repo.
-Treat ServiceNow the same as other vendors — build and push manually (Step 7).
+Treat ServiceNow the same as other vendors — build and push manually (Step 8).
 
-### Step 7 — Deploy to ECR + App Runner (vendors WITHOUT GitHub Actions CI/CD)
+### Step 8 — Deploy to ECR + App Runner (vendors WITHOUT GitHub Actions CI/CD)
 
 For all vendors including ServiceNow — do this manually (ServiceNow CI/CD is broken):
 
-**7a. Authenticate with ECR:**
+**8a. Authenticate with ECR:**
 ```bash
 aws ecr get-login-password --profile okta-sso --region us-east-1 \
   | docker login --username AWS --password-stdin 905418046272.dkr.ecr.us-east-1.amazonaws.com
 ```
 (Profile is `okta-sso` — the only configured AWS profile in this environment.)
 
-**7b. Build the image (must be linux/amd64 for App Runner):**
+**8b. Build the image (must be linux/amd64 for App Runner):**
 
-Use an intermediate tag to avoid the zsh `:l` modifier bug (applies to all vendors):
+For Mist, Meraki, and Aruba EdgeConnect, use an intermediate tag to avoid the zsh `:l` modifier bug:
 ```bash
+# Mist / Meraki (intermediate tag)
 docker build --no-cache --platform linux/amd64 -t mock-{vendor}-build {vendor repo path}
 docker tag mock-{vendor}-build 905418046272.dkr.ecr.us-east-1.amazonaws.com/{ecr-repo-name}:latest
 ```
 
-**7c. Push to ECR:**
+For all other vendors (direct tag):
 ```bash
-docker push 905418046272.dkr.ecr.us-east-1.amazonaws.com/{ecr-repo-name}:latest
+docker build --no-cache --platform linux/amd64 \
+  -t 905418046272.dkr.ecr.us-east-1.amazonaws.com/{ecr-repo-name}:latest \
+  {vendor repo path}
 ```
 
-**7d. App Runner auto-deploys** via `AutoDeploymentsEnabled=True` — no manual trigger needed.
-Verify the deployment started:
+**8c. Push to ECR:**
 ```bash
-aws apprunner list-services --profile okta-sso --region us-east-1 \
-  --query 'ServiceSummaryList[?contains(ServiceName, `{ecr-repo-name}`)].[ServiceName,Status]' \
-  --output table
+docker push 905418046272.dkr.ecr.us-east-1.amazonaws.com/{ecr-repo-name}:latest
 ```
 
 **Meraki-specific note:** The Meraki App Runner service runs in permissive auth mode
@@ -143,7 +203,24 @@ and **Orchestrator URL** (not "Base URL"). Use:
 - Skip TLS Verification: **Enabled**
 - IPAM Discovery: **Enabled**, Federated Realm: **Default**
 
-### Step 8 — Verify CSP Mock Deployer backend autowiring
+**Tenable-specific note:** The Tenable App Runner service has **auto-deploy disabled**.
+After pushing to ECR, trigger deployment manually:
+```bash
+SVC_ARN=$(aws apprunner list-services --profile okta-sso --region us-east-1 \
+  --query 'ServiceSummaryList[?contains(ServiceName,`mock-tenable-api`)].ServiceArn' \
+  --output text)
+aws apprunner start-deployment --profile okta-sso --region us-east-1 --service-arn $SVC_ARN
+```
+
+**8d. App Runner auto-deploys** via `AutoDeploymentsEnabled=True` — no manual trigger needed (all vendors except Tenable).
+Verify the deployment started:
+```bash
+aws apprunner list-services --region us-east-1 \
+  --query 'ServiceSummaryList[?contains(ServiceName, `{ecr-repo-name}`)].[ServiceName,Status]' \
+  --output table
+```
+
+### Step 9 — Verify CSP Mock Deployer backend autowiring
 
 After the App Runner service is running, confirm the CSP Mock Deployer backend is correctly
 wired for this vendor. Read:
@@ -164,6 +241,7 @@ Find the vendor's entry in `VENDOR_CATALOG`. Use this mapping from sync-vendor n
 | Mist | Juniper Mist |
 | Meraki | Cisco Meraki |
 | Aruba EdgeConnect | Aruba EdgeConnect |
+| Tenable | Tenable |
 
 **Check 1 — apprunner_service name matches ECR repo name**
 
@@ -195,13 +273,14 @@ env var, returning blank credentials to the UI.
 **Report the result** — pass (all three checks green) or flag any discrepancy with the exact
 fix needed before the user runs an autowire from the CSP Mock Deployer.
 
-### Step 9 — Report to user
+### Step 10 — Report to user
 
 Summarise what was done:
 - Master sheet version used (file size or record count)
 - Generator output (total records, by site, by category)
-- Files changed in the repo
-- GitHub push status + Actions URL (if ServiceNow)
+- Files changed in the vendor repo
+- Three docs updated in luminary-demo-docs (Fleet Reference, SE Overview, Dataset Final) — list the old and new count for each
+- GitHub push status for both repos
 - ECR push status and App Runner deployment status
-- Step 8 autowiring check result (pass / issues found)
+- Step 9 autowiring check result (pass / issues found)
 - Any errors encountered
